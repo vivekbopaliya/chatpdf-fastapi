@@ -47,7 +47,7 @@ def create_access_token(data: dict):
 def create_user(db: Session, user: UserCreate):
     db_user = get_user_by_email(db, user.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email already registered, please try another one.")
     
     hashed_password = get_password_hash(user.password)
     db_user = User(
@@ -65,8 +65,8 @@ async def get_current_user(
     token: Optional[str] = Cookie(None, alias="auth_token")
 ):
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        status_code=401,
+        detail="User not authenticated. Please login.",
     )
     
     if not token:

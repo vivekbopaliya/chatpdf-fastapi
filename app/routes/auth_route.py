@@ -14,12 +14,12 @@ router = APIRouter(
     tags=["authentication"]
 )
 
-@router.post("/register", response_model=UserSchema)
+@router.post("/register", response_model=dict)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     print("Registering user:", user.email)
     return create_user(db=db, user=user)
 
-@router.post("/login")
+@router.post("/login", response_model=dict)
 def login(
     user_data: UserLogin,
     response: Response,
@@ -28,8 +28,8 @@ def login(
     user = authenticate_user(db, user_data.email, user_data.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+            status_code=401,
+            detail="Incorrect email or password, please provide valid credentials",
         )
     
     token_data = {
