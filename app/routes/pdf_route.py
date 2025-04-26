@@ -28,24 +28,28 @@ async def pdf_upload(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    print("current_user:", current_user.id)
     if not file:
         raise HTTPException(status_code=400, detail='Please upload a file')
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail='Uploaded file must be a PDF')
     
     try:
+        # Read the PDF file binary data
         pdf_binary_data = await file.read()
         
         file_size = len(pdf_binary_data)
         
         pdf = io.BytesIO(pdf_binary_data)
+        # Use PyPDF2 to read the PDF content
         pdf_content = PdfReader(pdf)
 
         text = ''
         for i in pdf_content.pages:
             text += i.extract_text()
 
+
+
+        # Split the text into chunks
         text_splitter = CharacterTextSplitter(
             separator='\n',
             chunk_size=2000,
@@ -54,13 +58,18 @@ async def pdf_upload(
         )
         chunks = text_splitter.split_text(text)
         print(f"Number of chunks: {len(chunks)}")
+
+        # Create embeddings and knowledge base
         embeddings = OpenAIEmbeddings()
 
+#        # Create a FAISS knowledge base from the chunks
         knowledge_base = FAISS.from_texts(chunks, embeddings)
         
+        # Save the knowledge base to a file or database
         serialized_kb = pickle.dumps(knowledge_base)
         
-        print("serialized_kb:", serialized_kb[:100])  
+        print("serialized_kb:", serialized_kb[:100])
+        # Store the PDF and knowledge base in the database  
         pdf_record = PDF(
             name=file.filename,
             size=file_size,

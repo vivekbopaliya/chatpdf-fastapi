@@ -34,12 +34,15 @@ async def question_and_answer(
 
         pdf_record = verify_user_owns_pdf(question.pdf_id, current_user, db)
         
+        # Load the knowledge base from the PDF record
         knowledge_base = pickle.loads(pdf_record.content)
         
+        # Check if the conversation already exists
         conversation = db.query(ChatHistory).filter(
             ChatHistory.pdf_id == question.pdf_id
         ).first()
         
+        # If no conversation exists, create a new one
         if not conversation:
             conversation = ChatHistory(
                 pdf_id=question.pdf_id,
@@ -57,16 +60,35 @@ async def question_and_answer(
         
         llm = OpenAI(model="gpt-3.5-turbo-instruct")
         
+        # Define the prompt template
         prompt_template = PromptTemplate(
-            input_variables=["context", "question"],
-            template="""Use the following context to answer the question. If the answer is not in the context, say so.
-Context: {context}
-Question: {question}
-Answer:"""
-        )
-        
+                input_variables=["context", "question"],
+                template="""You are an intelligent assistant helping a user understand information from their PDF document.
+
+            Instructions:
+            - Carefully analyze the provided context from the PDF document.
+            - Answer the user's question based ONLY on the information provided in the context.
+            - If the answer is fully contained in the context, provide a clear, concise response.
+            - If the answer is partially in the context, provide what you can find and indicate what information is missing.
+            - If the answer is not in the context at all, politely state that the information isn't present in the provided sections.
+            - Do not make up information or use knowledge outside of the provided context.
+            - If the context is ambiguous or unclear, acknowledge this and explain what's confusing.
+            - For complex questions, break down your answer into structured parts.
+            - When referencing specific parts of the document, indicate where the information came from (e.g., "According to page 5..." or "In the section about...").
+            - If the user asks for a summary, focus on key points rather than every detail.
+
+            Context from PDF: {context}
+
+            User Question: {question}
+
+            Answer:"""
+            )
+                    
+                    # Create the retriever with a search method
         retriever = knowledge_base.as_retriever(search_kwargs={"k": 4})
         
+        # Create the QA chain with the LLM and retriever
+        # Use the "stuff" chain type for simplicity
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -75,18 +97,19 @@ Answer:"""
             chain_type_kwargs={"prompt": prompt_template}
         )
         
+        # This is for debugging purposes, to see total tokens used and cost
         with get_openai_callback() as cb:
             result = qa_chain.invoke({"query": question.question})
             response = result["result"]
             print(f"OpenAI API usage: {cb}")
         
-        print("Before update:", conversation.conversation)
+        # Append the new question and answer to the conversation
         conversation.conversation.append({
             "user": question.question,
             "ai": response,
             "timestamp": datetime.datetime.utcnow().isoformat()
         })
-        print("After append:", conversation.conversation)
+        # Update the conversation in the database
         flag_modified(conversation, "conversation")
         db.commit()
         print("After commit:", db.query(ChatHistory).filter(ChatHistory.id == conversation.id).first().conversation)

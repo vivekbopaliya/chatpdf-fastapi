@@ -16,4 +16,5 @@ class User(Base):
     session_id = Column(String, unique=True, nullable=True)  
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     
+    # One to many relationship with PDF
     pdfs = relationship("PDF", back_populates="user", cascade="all, delete-orphan")

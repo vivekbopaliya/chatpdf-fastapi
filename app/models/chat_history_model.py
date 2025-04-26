@@ -13,5 +13,5 @@ class ChatHistory(Base):
     conversation = Column(JSON, nullable=False, default=list)  # Store chat history as JSON array
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     
-    # Relationship with PDF
+    # Foreign key to the PDF associated with this chat history
     pdf = relationship("PDF", back_populates="chat_histories")

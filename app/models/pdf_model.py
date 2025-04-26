@@ -14,7 +14,9 @@ class PDF(Base):
     uploaded_date = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     content = Column(LargeBinary, nullable=False)  
     
+    # Foreign key to the user who uploaded the PDF
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
+    # One to many relationship with ChatHistory
     chat_histories = relationship("ChatHistory", back_populates="pdf", cascade="all, delete-orphan")
     user = relationship("User", back_populates="pdfs")
