@@ -86,3 +86,9 @@ The application provides the following API endpoints:
 ### Answer Retrieval
 
 - Using OpenAI's language model, an appropriate answer is retrieved based on the semantic search results.
+
+
+### Here are the links to the high-level and low-level design README files:
+- [High-Level Design README](https://github.com/vivekbopaliya/chatpdf-fastapi/blob/main/docs/high_level_design/README.md)
+- [Low-Level Design README](https://github.com/vivekbopaliya/chatpdf-fastapi/blob/main/docs/low_level_design/README.md)
+
